@@ -12,3 +12,7 @@ duration_powerups = {
     "Cyclops", 10,
     "BicycleHandlebar", 10,
 }
+
+
+def update_powerups_value():
+    pass
