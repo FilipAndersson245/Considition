@@ -1,7 +1,9 @@
 from typing import Optional, Dict, Tuple, Any
 from directions import opposite_directions
 from speed import movement_points
-tile_costs = {"water": 45, "road": 31, "trail": 40, "grass": 50}
+import numpy as np
+tile_costs = {"water": 45, "road": 31,
+              "trail": 40, "grass": 50, "win": 0, "start": 0, "forest": 999999}
 deviation = {"water": 10, "trail": 25, "road": 40}
 water_cost = 7
 
