@@ -17,11 +17,11 @@ def get_board():
     return board
 
 
-def map_to_board_first(state):
+def map_to_board_first(tiles):
     """
     Update board with a given state
     """
-    for x, row in enumerate(state):
+    for x, row in enumerate(tiles):
         for y, tile in enumerate(row):
             tile_type = tile["type"]
             if tile_type != "forest":

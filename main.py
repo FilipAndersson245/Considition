@@ -3,6 +3,7 @@ import random
 import sys
 import webbrowser
 from os import system
+import time
 
 import numpy as np
 import scipy as scipy
@@ -13,11 +14,12 @@ from directions import (directions, get_dir, tree_in_any_direction,
                         tree_in_current_direction)
 from helpers.draw_map import draw_map
 from board import map_to_board_first, get_board, astar_shortest_path
+from tiles import get_next_best_move
 
 
 _api_key = "3e555fd2-2d69-482f-b14c-e2fb503d66a5"
 
-_api = API(_api_key, 1, "standardmap", 10, 10, 10)
+_api = API(_api_key, 1, "standardmap", 0, 0, 0)
 
 
 def solution2(game_id):
@@ -70,18 +72,18 @@ def solution3(game_id):
 
     if(initial_state["success"] == True):
         state = initial_state["gameState"]
+        turn = state["turn"]
         tiles = state["tileInfo"]
         current_player = state["yourPlayer"]
         current_position = (current_player["xPos"], current_player["yPos"])
         path_index = 0
-        # map_to_board_first(tiles)
-
+        map_to_board_first(tiles)
         # TODO: DETECT THESE AUTOMATICALLY IN THE FUTURE
         goal_point = (49, 92)
 
         path = astar_shortest_path(state, current_position, goal_point)
         draw_map(state, path)
-        while not state["gameStatus"] == "done":
+        while (not state["gameStatus"] == "done") and (current_position != goal_point):
             current_player = state["yourPlayer"]
             current_position = (current_player["xPos"], current_player["yPos"])
             turn = state["turn"]
@@ -96,8 +98,22 @@ def solution3(game_id):
                 direction = get_dir(
                     current_position, path[path_index])
 
-            response = _api.step(game_id, direction)
+            next_move = get_next_best_move(path, state)
+
+            if next_move["direction"] == "":
+                response = _api.rest(game_id)
+            elif next_move["move"] == "step":
+                response = _api.step(game_id, next_move["direction"]) 
+            else:
+                response = _api.make_move(game_id, next_move["direction"], next_move["move"])
+            print(current_position)
+
+            print("Stamina: " + str(current_player["stamina"]))
             state = response["gameState"]
+            #time.sleep(2)
+        draw_map(state, path)
+        print("Turns: "+str(turn))
+            
     else:
         print(initial_state["message"])
 
