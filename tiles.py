@@ -1,7 +1,9 @@
 from typing import Optional, Dict, Tuple, Any
 from directions import opposite_directions
 from speed import movement_points
-tile_costs = {"water": 45, "road": 31, "trail": 40, "grass": 50}
+import numpy as np
+tile_costs = {"water": 45, "road": 31,
+              "trail": 40, "grass": 50, "win": 0, "start": 0, "forest": 999999}
 deviation = {"water": 10, "trail": 25, "road": 40}
 water_cost = 7
 
@@ -19,6 +21,16 @@ def can_i_afford_to_move(movment_points: int, tile_type: str) -> bool:
         return True if movment_points-tile_costs[tile_type] > 0 else False
     else:
         print("Error ({}) is not a valid tyletype!".format(tile_type))
+
+
+def amount_of_impassable(tileState, tile: Tuple[int, int]):
+    y, x = tile
+    count = 0
+    count += 1 if tileState[y+1][x]["type"] == "forest" else 0
+    count += 1 if tileState[y-1][x]["type"] == "forest" else 0
+    count += 1 if tileState[y][x+1]["type"] == "forest" else 0
+    count += 1 if tileState[y][x-1]["type"] == "forest" else 0
+    return count
 
 
 def foo(direction: str, tyle: str) -> str:

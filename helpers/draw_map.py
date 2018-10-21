@@ -17,7 +17,7 @@ def draw_map(game_state, path=False):
                 print("☻", end='')
 
             elif path and (x, y) in path:
-                print(Back.WHITE + direction, end='')
+                print(Back.LIGHTBLACK_EX + direction, end='')
 
             elif type is 'f':
                 print(Back.GREEN + direction, end='')

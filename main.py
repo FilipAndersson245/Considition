@@ -12,7 +12,7 @@ from api import API
 from directions import (directions, get_dir, tree_in_any_direction,
                         tree_in_current_direction)
 from helpers.draw_map import draw_map
-from board import map_to_board_first, get_board
+from board import map_to_board_first, get_board, astar_shortest_path
 
 
 _api_key = "3e555fd2-2d69-482f-b14c-e2fb503d66a5"
@@ -74,12 +74,12 @@ def solution3(game_id):
         current_player = state["yourPlayer"]
         current_position = (current_player["xPos"], current_player["yPos"])
         path_index = 0
-        map_to_board_first(tiles)
+        # map_to_board_first(tiles)
+
         # TODO: DETECT THESE AUTOMATICALLY IN THE FUTURE
         goal_point = (49, 92)
 
-        path = astar(
-            get_board(), current_position, goal_point)
+        path = astar_shortest_path(state, current_position, goal_point)
         draw_map(state, path)
         while not state["gameStatus"] == "done":
             current_player = state["yourPlayer"]
@@ -92,8 +92,7 @@ def solution3(game_id):
             path_index += 1
             if direction == None:
                 path_index = 0
-                path = astar(
-                    get_board(), current_position, goal_point)
+                path = astar_shortest_path(state, current_position, goal_point)
                 direction = get_dir(
                     current_position, path[path_index])
 
@@ -112,9 +111,9 @@ def main():
     print(game_id)
     if readied_game is not None:
         print("Joined and readied! Solving...")
-        webbrowser.open(
-            'http://www.theconsidition.se/ironmandebugvisualizer?gameId={}'.format(game_id), new=2)
-        solution2(game_id)
+        # webbrowser.open(
+        #    'http://www.theconsidition.se/ironmandebugvisualizer?gameId={}'.format(game_id), new = 2)
+        solution3(game_id)
     # game_state = _api.get_game(game_id)
     # drawMap(game_state)
 
