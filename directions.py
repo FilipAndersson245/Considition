@@ -23,6 +23,43 @@ def get_dir(current_position: _Position, destination: _Position) -> Optional[str
         return None
 
 
+def get_boost_value(direction: str, tile) -> int:
+    """
+    Get the value of the boost either (+/-)
+    """
+    if direction is None:
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    elif tile["type"] == "water":
+        if "waterstream" in tile:
+            stream = tile["waterstream"]
+            if stream["direction"] == direction:
+                return stream["speed"]
+            elif stream["direction"] == opposite_directions[direction]:
+                return (0-stream["speed"])
+    else:
+        if "elevation" in tile:
+            elevation = tile["elevation"]
+            if elevation["direction"] == direction:
+                return (0-elevation["amount"])
+            elif elevation["direction"] == opposite_directions[direction]:
+                return elevation["amount"]
+    return 0
+
+
+def get_elevation_stream_direction(tile)->Optional[str]:
+    """
+    returns a dict with elevation or stream or None if the tile dosent contain any of previus mentioned.
+    """
+    if tile["type"] == "water":
+        if "waterstream" in tile:
+            return tile["waterstream"]["direction"]
+
+    else:
+        if "elevation" in tile:
+            return tile["elevation"]["direction"]
+    return None
+
+
 def tree_in_current_direction(state: Dict[str, Any], current_direction: str) -> bool:
     """
     Checks if a tree is in the current dirrection and return true if there is a tree

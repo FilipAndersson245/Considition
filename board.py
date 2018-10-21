@@ -4,7 +4,7 @@ from typing import Set, Tuple
 from tiles import tile_costs
 import networkx as nx
 from os import sys
-from directions import get_dir
+from directions import get_dir, get_boost_value, get_elevation_stream_direction, opposite_directions
 board: np.ndarray = np.full((100, 100), np.inf)
 
 # debuging
@@ -73,25 +73,35 @@ def add_neighbours(tiles, G, own: Tuple[int, int]):
         return neighbours
     else:
         neighbours[0] = other = (own[0]+1, own[1])
-        if not G.has_edge(own, other):
-            G.add_edge(
-                own, other, weight=tile_costs[tiles[other[1]][other[0]]["type"]])
+        create_connection(G, own, other, tiles)
 
         neighbours[1] = other = (own[0], own[1]+1)
-        if not G.has_edge(own, other):
-            G.add_edge(
-                own, other, weight=tile_costs[tiles[other[1]][other[0]]["type"]])
+        create_connection(G, own, other, tiles)
 
         neighbours[2] = other = (own[0]-1, own[1])
-        if not G.has_edge(own, other):
-            G.add_edge(
-                own, other, weight=tile_costs[tiles[other[1]][other[0]]["type"]])
+        create_connection(G, own, other, tiles)
 
         neighbours[3] = other = (own[0], own[1]-1)
-        if not G.has_edge(own, other):
-            G.add_edge(
-                own, other, weight=tile_costs[tiles[other[1]][other[0]]["type"]])
+        create_connection(G, own, other, tiles)
     return neighbours
+
+
+def create_connection(G, own, other, tiles):
+    if not G.has_edge(own, other):
+        moving_direction = get_dir(own, other)
+        boost = get_boost_value(moving_direction, tiles[other[1]][other[0]])
+        tile_cost = (tile_costs[tiles[other[1]][other[0]]["type"]] + boost)
+
+        current_tile_push = get_elevation_stream_direction(
+            tiles[other[1]][other[0]])
+        if current_tile_push is not None:
+            if moving_direction == current_tile_push:
+                tile_cost -= 5
+            elif moving_direction != opposite_directions[current_tile_push]:
+                tile_cost += 5
+        if tile_cost < 0:
+            tile_cost = 1
+        G.add_edge(own, other, weight=(tile_cost))
 
 
 def generate_graph(state, currentPos: Tuple[int, int]):
@@ -115,5 +125,4 @@ def astar_shortest_path(state, start: Tuple[int, int], finish: Tuple[int, int]):
     # plt.show()
 
     shortest_path = nx.astar_path(graph, start, finish)
-    print(shortest_path)
     return shortest_path
