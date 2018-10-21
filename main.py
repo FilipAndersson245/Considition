@@ -3,6 +3,7 @@ import random
 import sys
 import webbrowser
 from os import system
+import time
 
 import numpy as np
 import scipy as scipy
@@ -13,11 +14,12 @@ from directions import (directions, get_dir, tree_in_any_direction,
                         tree_in_current_direction)
 from helpers.draw_map import draw_map
 from board import map_to_board_first, get_board
+from tiles import get_next_best_move
 
 
 _api_key = "3e555fd2-2d69-482f-b14c-e2fb503d66a5"
 
-_api = API(_api_key, 1, "standardmap", 10, 10, 10)
+_api = API(_api_key, 1, "standardmap", 0, 0, 0)
 
 
 def solution2(game_id):
@@ -70,10 +72,10 @@ def solution3(game_id):
 
     if(initial_state["success"] == True):
         state = initial_state["gameState"]
+        turn = state["turn"]
         tiles = state["tileInfo"]
         current_player = state["yourPlayer"]
         current_position = (current_player["xPos"], current_player["yPos"])
-        path_index = 0
         map_to_board_first(tiles)
         # TODO: DETECT THESE AUTOMATICALLY IN THE FUTURE
         goal_point = (49, 92)
@@ -81,24 +83,27 @@ def solution3(game_id):
         path = astar(
             get_board(), current_position, goal_point)
         draw_map(state, path)
-        while not state["gameStatus"] == "done":
+        while (not state["gameStatus"] == "done") and (current_position != goal_point):
             current_player = state["yourPlayer"]
             current_position = (current_player["xPos"], current_player["yPos"])
             turn = state["turn"]
 
-            tiles = state["tileInfo"]
-            direction = get_dir(
-                current_position, path[path_index])
-            path_index += 1
-            if direction == None:
-                path_index = 0
-                path = astar(
-                    get_board(), current_position, goal_point)
-                direction = get_dir(
-                    current_position, path[path_index])
+            next_move = get_next_best_move(path, state)
 
-            response = _api.step(game_id, direction)
+            if next_move["direction"] == "":
+                response = _api.rest(game_id)
+            elif next_move["move"] == "step":
+                response = _api.step(game_id, next_move["direction"]) 
+            else:
+                response = _api.make_move(game_id, next_move["direction"], next_move["move"])
+            print(current_position)
+
+            print("Stamina: " + str(current_player["stamina"]))
             state = response["gameState"]
+            #time.sleep(2)
+        draw_map(state, path)
+        print("Turns: "+str(turn))
+            
     else:
         print(initial_state["message"])
 
@@ -113,8 +118,8 @@ def main():
     if readied_game is not None:
         print("Joined and readied! Solving...")
         webbrowser.open(
-            'http://www.theconsidition.se/ironmandebugvisualizer?gameId={}'.format(game_id), new=2)
-        solution2(game_id)
+            'http://www.theconsidition.se/ironmanvisualizer?gameId={}'.format(game_id), new=2)
+        solution3(game_id)
     # game_state = _api.get_game(game_id)
     # drawMap(game_state)
 
