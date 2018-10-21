@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from typing import Set, Tuple
-from tiles import tile_costs
+from tiles import tile_costs, amount_of_impassable
 import networkx as nx
 from os import sys
 from directions import get_dir, get_boost_value, get_elevation_stream_direction, opposite_directions
@@ -70,7 +70,7 @@ def add_neighbours(tiles, G, own: Tuple[int, int]):
     neighbours = np.array([None, None, None, None], None)
     own_tile = tiles[own[1]][own[0]]["type"]
     if(own_tile == "forest" or len(G.edges(own)) == 4):
-        return neighbours
+        return None
     else:
         neighbours[0] = other = (own[0]+1, own[1])
         create_connection(G, own, other, tiles)
@@ -105,15 +105,15 @@ def create_connection(G, own, other, tiles):
 
 
 def generate_graph(state, currentPos: Tuple[int, int]):
-    G = nx.Graph()
+    G = nx.DiGraph()
     G.add_node(currentPos)
     added_nodes = [currentPos]
     while added_nodes:
         neighbours = add_neighbours(state["tileInfo"], G, added_nodes.pop(-1))
-
-        for val in neighbours:
-            if val != None:
-                added_nodes.append(val)
+        if neighbours is not None:
+            for val in neighbours:
+                if val != None:
+                    added_nodes.append(val)
     return G
 
 

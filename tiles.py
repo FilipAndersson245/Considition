@@ -23,6 +23,16 @@ def can_i_afford_to_move(movment_points: int, tile_type: str) -> bool:
         print("Error ({}) is not a valid tyletype!".format(tile_type))
 
 
+def amount_of_impassable(tileState, tile: Tuple[int, int]):
+    y, x = tile
+    count = 0
+    count += 1 if tileState[y+1][x]["type"] == "forest" else 0
+    count += 1 if tileState[y-1][x]["type"] == "forest" else 0
+    count += 1 if tileState[y][x+1]["type"] == "forest" else 0
+    count += 1 if tileState[y][x-1]["type"] == "forest" else 0
+    return count
+
+
 def foo(direction: str, tyle: str) -> str:
     if tyle == "water":
         return direction
