@@ -1,10 +1,17 @@
 from typing import Optional, Dict, Tuple, Any
-from directions import opposite_directions, directions
+from directions import opposite_directions, directions, get_boost_dir
 from speed import movement_points, real_movment_points, moves, stamina_costs, new_stamina
 import numpy as np
 tile_costs = {"water": 45, "road": 31, "trail": 40, "grass": 50, "forest": np.inf, "rockywater": np.inf, "start": 50, "win": 0}
 deviation = {"water": 15, "trail": 25, "road": 40}
 water_cost = 7
+
+
+def get_goal(tiles):
+    for y, row in enumerate(tiles):
+        for x, tile in enumerate(row):
+            if tile["type"] == "win":
+                return (x, y)
 
 
 def is_impassable(tile_name):
@@ -73,21 +80,44 @@ def estimated_output_position(state: Dict[str, Any], direction: str, movement_sp
     player_position = (state["yourPlayer"]["xPos"], state["yourPlayer"]["yPos"])
     stamina = state["yourPlayer"]["stamina"]
     tiles = state["tileInfo"]
+    deviation_points = {"n": 0, "e": 0, "s": 0, "w": 0,}
 
     if movement_speed == "step":
         return get_position_in_direction(direction, player_position)
     
     current_movment_points = real_movment_points(stamina, movement_speed)
     while current_movment_points > 0:
+        # check if inside forest, no good
         if is_impassable(state["tileInfo"][player_position[1]][player_position[0]]["type"]):
             break
+
         next_tile = get_tile_in_direction(tiles, direction, player_position)
-        tile_type_cost = 20 if is_impassable(next_tile["type"]) else tile_costs[next_tile["type"]]
-        if current_movment_points > tile_type_cost:
+        boost_tile = get_boost_dir(next_tile)
+
+        tile_cost = 20 if is_impassable(next_tile["type"]) else tile_costs[next_tile["type"]] # base cost
+        if boost_tile != None:
+            if boost_tile["direction"] == direction:
+                tile_cost -= boost_tile["speed"]
+            elif boost_tile["direction"] == opposite_directions[direction]:
+                tile_cost += boost_tile["speed"]
+
+        if current_movment_points > tile_cost:
             # "make virtual movement"
             player_position = get_position_in_direction(
                 direction, player_position)
-            current_movment_points -= tile_type_cost
+            current_movment_points -= tile_cost
+
+            # sliding
+            if boost_tile != None:
+                if (boost_tile["direction"] != direction) or (boost_tile["direction"] != opposite_directions[direction]):
+                    deviation_points[boost_tile["direction"]] += boost_tile["speed"]
+                    for sliding_dir in directions:
+                        if deviation_points[sliding_dir] >= deviation[next_tile["type"]]:
+                            # make sliding
+                            player_position = player_position = get_position_in_direction(sliding_dir, player_position)
+                            deviation_points[sliding_dir] -= deviation[next_tile["type"]]
+                        
+
         else:
             break
 
@@ -102,10 +132,12 @@ def is_around(tile_pos, player_pos, steps_from_path):
     return (abs(tile_pos[0]-player_pos[0]) + abs(tile_pos[1]-player_pos[1])) <= steps_from_path
 
 all_pos = []
+all_opt = []
+opt_path = []
 
 def get_next_best_move(path, state: Dict[str, Any]):
     stamina = state["yourPlayer"]["stamina"]
-    stamina_threshold = 50
+    stamina_threshold = 40
     steps_from_path = 1
     current_best = {"index": 0, "stamina_cost": np.inf, "move": "step", "direction": ""}
     position = None
@@ -128,6 +160,7 @@ def get_next_best_move(path, state: Dict[str, Any]):
                 continue
             local_best = indices[-1]
 
+            # sorts first on how long to go, then on stamina
             if local_best > current_best["index"]:
                 current_best = {"index": local_best, "stamina_cost": stamina_cost, "move": move, "direction": direction}
             elif (local_best == current_best["index"]) and (stamina_cost < current_best["stamina_cost"]):

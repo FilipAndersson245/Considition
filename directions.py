@@ -6,6 +6,19 @@ directions: List[str] = ["n", "e", "s", "w"]
 opposite_directions: Dict[str, str] = {"n": "s", "e": "w", "s": "e", "w": "e"}
 
 
+def get_boost_dir(tile):
+    """
+    Converts boost to mean same thing.
+    """
+    if tile["type"] == "water":
+        if "waterstream" in tile:
+            return tile["waterstream"]
+    else:
+        if "elevation" in tile:
+            return {"direction": opposite_directions[tile["elevation"]["direction"]], "speed": tile["elevation"]["amount"]}
+    return None
+
+
 def get_dir(current_position: _Position, destination: _Position) -> Optional[str]:
     """
     return string e, w, s ,n as string or False if the pos differ more then one.

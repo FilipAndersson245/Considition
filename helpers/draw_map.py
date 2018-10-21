@@ -28,7 +28,7 @@ def draw_map(game_state, path=False):
             elif type is 'w':
                 print(Fore.LIGHTBLACK_EX + Back.BLUE + direction, end='')
             elif type is 't':
-                print(Fore.LIGHTBLACK_EX + Back.RED + direction, end='')
+                print(Fore.LIGHTBLACK_EX + Back.LIGHTMAGENTA_EX + direction, end='')
             elif type is 'g':
                 print(Fore.LIGHTBLACK_EX + Back.YELLOW + direction, end='')
             elif type is "r":

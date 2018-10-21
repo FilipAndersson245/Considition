@@ -14,12 +14,12 @@ from directions import (directions, get_dir, tree_in_any_direction,
                         tree_in_current_direction)
 from helpers.draw_map import draw_map
 from board import map_to_board_first, get_board, astar_shortest_path
-from tiles import get_next_best_move
+from tiles import get_next_best_move, get_goal
 
 
 _api_key = "3e555fd2-2d69-482f-b14c-e2fb503d66a5"
 
-_api = API(_api_key, 1, "standardmap", 0, 0, 0)
+_api = API(_api_key, 1, "standardmap", 10, 10, 10)
 
 
 def solution2(game_id):
@@ -34,7 +34,7 @@ def solution2(game_id):
         path_index = 0
         map_to_board_first(tiles)
         # TODO: DETECT THESE AUTOMATICALLY IN THE FUTURE
-        goal_point = (49, 92)
+        goal_point = get_goal(tiles)
 
         # for row in get_board():
         #     for tile in row:
@@ -79,7 +79,7 @@ def solution3(game_id):
         path_index = 0
         map_to_board_first(tiles)
         # TODO: DETECT THESE AUTOMATICALLY IN THE FUTURE
-        goal_point = (49, 92)
+        goal_point = get_goal(tiles)
 
         path = astar_shortest_path(state, current_position, goal_point)
         draw_map(state, path)
@@ -94,7 +94,7 @@ def solution3(game_id):
             path_index += 1
             if direction == None:
                 path_index = 0
-                path = astar_shortest_path(state, current_position, goal_point)
+                # path = astar_shortest_path(state, current_position, goal_point)
                 direction = get_dir(
                     current_position, path[path_index])
 
@@ -111,9 +111,11 @@ def solution3(game_id):
             print("Stamina: " + str(current_player["stamina"]))
             state = response["gameState"]
             #time.sleep(2)
+            # weird hard check when game won't stop
+            if ("message" in response) and (response["message"] == "Game has finished"):
+                break
         draw_map(state, path)
         print("Turns: "+str(turn))
-            
     else:
         print(initial_state["message"])
 
