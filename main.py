@@ -6,7 +6,6 @@ from os import system
 import time
 
 import numpy as np
-import scipy as scipy
 
 from a_star import astar
 from api import API
@@ -94,7 +93,7 @@ def solution3(game_id):
             path_index += 1
             if direction == None:
                 path_index = 0
-                #Create new path everytime devienting from standard path this will incresse time calculating
+                # Create new path everytime devienting from standard path this will incresse time calculating
                 # path = astar_shortest_path(state, current_position, goal_point)
                 direction = get_dir(
                     current_position, path[path_index])
@@ -104,14 +103,15 @@ def solution3(game_id):
             if next_move["direction"] == "":
                 response = _api.rest(game_id)
             elif next_move["move"] == "step":
-                response = _api.step(game_id, next_move["direction"]) 
+                response = _api.step(game_id, next_move["direction"])
             else:
-                response = _api.make_move(game_id, next_move["direction"], next_move["move"])
+                response = _api.make_move(
+                    game_id, next_move["direction"], next_move["move"])
             print(current_position)
 
             print("Stamina: " + str(current_player["stamina"]))
             state = response["gameState"]
-            #time.sleep(2)
+            # time.sleep(2)
             # weird hard check when game won't stop
             if ("message" in response) and (response["message"] == "Game has finished"):
                 break

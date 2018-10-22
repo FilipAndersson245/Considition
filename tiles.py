@@ -2,19 +2,20 @@ from typing import Optional, Dict, Tuple, Any
 from directions import opposite_directions, directions, get_boost_dir
 from speed import movement_points, real_movment_points, moves, stamina_costs, new_stamina
 import numpy as np
-tile_costs = {"water": 45, "road": 31, "trail": 40, "grass": 50, "forest": np.inf, "rockywater": np.inf, "start": 50, "win": 0}
+tile_costs = {"water": 45, "road": 31, "trail": 40, "grass": 50,
+              "forest": np.inf, "rockywater": np.inf, "start": 50, "win": 0}
 deviation = {"water": 15, "trail": 25, "road": 40}
 water_cost = 7
 
 
-def get_goal(tiles):
+def get_goal(tiles) -> Tuple[int, int]:
     for y, row in enumerate(tiles):
         for x, tile in enumerate(row):
             if tile["type"] == "win":
                 return (x, y)
 
 
-def is_impassable(tile_name):
+def is_impassable(tile_name: str) ->bool:
     return tile_costs[tile_name] == np.inf
 
 
@@ -77,14 +78,15 @@ def get_position_in_direction(direction, position) -> Optional[Tuple[int, int]]:
 
 
 def estimated_output_position(state: Dict[str, Any], direction: str, movement_speed: str):
-    player_position = (state["yourPlayer"]["xPos"], state["yourPlayer"]["yPos"])
+    player_position = (state["yourPlayer"]["xPos"],
+                       state["yourPlayer"]["yPos"])
     stamina = state["yourPlayer"]["stamina"]
     tiles = state["tileInfo"]
-    deviation_points = {"n": 0, "e": 0, "s": 0, "w": 0,}
+    deviation_points = {"n": 0, "e": 0, "s": 0, "w": 0, }
 
     if movement_speed == "step":
         return get_position_in_direction(direction, player_position)
-    
+
     current_movment_points = real_movment_points(stamina, movement_speed)
     while current_movment_points > 0:
         # check if inside forest, no good
@@ -94,7 +96,8 @@ def estimated_output_position(state: Dict[str, Any], direction: str, movement_sp
         next_tile = get_tile_in_direction(tiles, direction, player_position)
         boost_tile = get_boost_dir(next_tile)
 
-        tile_cost = 20 if is_impassable(next_tile["type"]) else tile_costs[next_tile["type"]] # base cost
+        tile_cost = 20 if is_impassable(
+            next_tile["type"]) else tile_costs[next_tile["type"]]  # base cost
         if boost_tile != None:
             if boost_tile["direction"] == direction:
                 tile_cost -= boost_tile["speed"]
@@ -110,13 +113,14 @@ def estimated_output_position(state: Dict[str, Any], direction: str, movement_sp
             # sliding
             if boost_tile != None:
                 if (boost_tile["direction"] != direction) or (boost_tile["direction"] != opposite_directions[direction]):
-                    deviation_points[boost_tile["direction"]] += boost_tile["speed"]
+                    deviation_points[boost_tile["direction"]
+                                     ] += boost_tile["speed"]
                     for sliding_dir in directions:
                         if deviation_points[sliding_dir] >= deviation[next_tile["type"]]:
                             # make sliding
-                            player_position = player_position = get_position_in_direction(sliding_dir, player_position)
+                            player_position = player_position = get_position_in_direction(
+                                sliding_dir, player_position)
                             deviation_points[sliding_dir] -= deviation[next_tile["type"]]
-                        
 
         else:
             break
@@ -131,15 +135,18 @@ def find_indices(lst, condition):
 def is_around(tile_pos, player_pos, steps_from_path):
     return (abs(tile_pos[0]-player_pos[0]) + abs(tile_pos[1]-player_pos[1])) <= steps_from_path
 
+
 all_pos = []
 all_opt = []
 opt_path = []
+
 
 def get_next_best_move(path, state: Dict[str, Any]):
     stamina = state["yourPlayer"]["stamina"]
     stamina_threshold = 40
     steps_from_path = 1
-    current_best = {"index": 0, "stamina_cost": np.inf, "move": "step", "direction": ""}
+    current_best = {"index": 0, "stamina_cost": np.inf,
+                    "move": "step", "direction": ""}
     position = None
     for move in moves:
         if new_stamina(stamina, move) < stamina_threshold:
@@ -152,22 +159,24 @@ def get_next_best_move(path, state: Dict[str, Any]):
                 continue
 
             if position == path[-1]:
-                current_best = {"index": np.inf, "stamina_cost": stamina_cost, "move": move, "direction": direction}
+                current_best = {
+                    "index": np.inf, "stamina_cost": stamina_cost, "move": move, "direction": direction}
                 break
 
-            indices = find_indices(path, lambda tile: is_around(tile, position, steps_from_path))
+            indices = find_indices(path, lambda tile: is_around(
+                tile, position, steps_from_path))
             if len(indices) == 0:
                 continue
             local_best = indices[-1]
 
             # sorts first on how long to go, then on stamina
             if local_best > current_best["index"]:
-                current_best = {"index": local_best, "stamina_cost": stamina_cost, "move": move, "direction": direction}
+                current_best = {
+                    "index": local_best, "stamina_cost": stamina_cost, "move": move, "direction": direction}
             elif (local_best == current_best["index"]) and (stamina_cost < current_best["stamina_cost"]):
-                current_best = {"index": local_best, "stamina_cost": stamina_cost, "move": move, "direction": direction}
+                current_best = {
+                    "index": local_best, "stamina_cost": stamina_cost, "move": move, "direction": direction}
     if position:
-        all_pos.append(estimated_output_position(state, current_best["direction"], current_best["move"]))
+        all_pos.append(estimated_output_position(
+            state, current_best["direction"], current_best["move"]))
     return current_best
-
-            
-                    
