@@ -1,5 +1,5 @@
 {
-  "python.pythonPath": "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\Anaconda3_64\\python.exe",
+  "python.pythonPath": "C:\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python36-32\\python.exe",
   "files.exclude": {
     "**/.git": true,
     "**/.svn": true,
