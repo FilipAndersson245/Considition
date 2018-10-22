@@ -50,22 +50,6 @@ def place_tile_types_in_board_state(state):
 def map_to_board_optimization(state):
     pass
 
-
-# # TODO Include elevation/streams
-# def generate_graph(state):
-#     grid = place_tile_types_in_board_state(state)
-#     F = nx.grid_2d_graph(100, 100)
-#     G = nx.Graph()
-#     for (u, v) in F.edges():
-#         if grid[u[0], u[1]] == "forest" and grid[v[0], v[1]] == "forest":
-#             continue
-#         elif grid[v[0], v[1]] == "forest":
-#             continue
-#         elif grid[v[0], v[1]] != "forest":
-#             tile_type_cost = tile_costs[grid[v[0], v[1]]]
-#             G.add_edge(u, v, weight=tile_type_cost)
-#     return G
-
 def add_neighbours(tiles, G, own: Tuple[int, int]):
     neighbours = np.array([None, None, None, None], None)
     own_tile = tiles[own[1]][own[0]]["type"]
