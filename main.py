@@ -6,7 +6,6 @@ from os import system
 import time
 
 import numpy as np
-import scipy as scipy
 
 from a_star import astar
 from api import API
@@ -19,7 +18,7 @@ from tiles import get_next_best_move, get_goal
 
 _api_key = "3e555fd2-2d69-482f-b14c-e2fb503d66a5"
 
-_api = API(_api_key, 1, "standardmap", 10, 10, 10)
+_api = API(_api_key, 1, "watermap", 10, 10, 10)
 
 
 def solution2(game_id):

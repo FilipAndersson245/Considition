@@ -53,20 +53,21 @@ def map_to_board_optimization(state):
 def add_neighbours(tiles, G, own: Tuple[int, int]):
     neighbours = np.array([None, None, None, None], None)
     own_tile = tiles[own[1]][own[0]]["type"]
-    if(own_tile == "forest" or len(G.edges(own)) == 4):
+
+    am_i_out_of_bounds = own[1]<0 or own[1]>=100 or own[0]<0 or own[0]>=100
+    if am_i_out_of_bounds:
+        print(own[1],own[0])
+    if(own_tile == "forest" or am_i_out_of_bounds or len(G.edges(own)) == 4 ):
         return None
     else:
-        neighbours[0] = other = (own[0]+1, own[1])
-        create_connection(G, own, other, tiles)
+        neighbours[0] = (own[0]+1, own[1])
+        neighbours[1] = (own[0], own[1]+1)
+        neighbours[2] = (own[0]-1, own[1])
+        neighbours[3] = (own[0], own[1]-1)
+        for i in range(len(neighbours)):
+            if neighbours[i] is not None:
+                create_connection(G, own, neighbours[i], tiles)
 
-        neighbours[1] = other = (own[0], own[1]+1)
-        create_connection(G, own, other, tiles)
-
-        neighbours[2] = other = (own[0]-1, own[1])
-        create_connection(G, own, other, tiles)
-
-        neighbours[3] = other = (own[0], own[1]-1)
-        create_connection(G, own, other, tiles)
     return neighbours
 
 
@@ -85,6 +86,7 @@ def create_connection(G, own, other, tiles):
                 tile_cost += boost*0.8
         if tile_cost < 0:
             tile_cost = 1
+
         G.add_edge(own, other, weight=(tile_cost))
 
 
