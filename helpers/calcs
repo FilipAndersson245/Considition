@@ -1,0 +1,83 @@
+======water======
+
+fast: 210
+sta: 50, 50
+45 90 135 180 = 4
+waste: 30
+stamina/step = 12.5
+
+
+medium: 150
+sta: 70, 30
+45 90 135 = 3
+waste: 15
+stamina/step = 10
+
+
+slow: 100
+sta: 90, 10
+45 90 = 2
+waste: 10
+stamina/step = 5
+
+
+step:
+stamina/step = 15
+
+
+
+
+======road======
+
+fast: 210
+sta: 50, 50
+steps: 6
+waste: 24
+stamina/step = 8
+
+
+medium: 150
+sta: 70, 30
+steps: 4
+waste: 26
+stamina/step = 7.5
+
+
+slow: 100
+sta: 90, 10
+steps: 3
+waste: 7
+stamina/step = 3.33
+
+
+step:
+stamina/step = 15
+
+
+
+
+======trail======
+
+fast: 210
+sta: 50, 50
+steps: 5
+waste: 10
+stamina/step = 10
+
+
+medium: 150
+sta: 70, 30
+steps: 3
+waste: 30
+stamina/step = 10
+
+
+slow: 100
+sta: 90, 10
+steps: 2
+waste: 20
+stamina/step = 5
+
+
+step:
+stamina/step = 15

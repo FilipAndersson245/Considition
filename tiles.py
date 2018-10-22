@@ -113,8 +113,8 @@ def estimated_output_position(state: Dict[str, Any], direction: str, movement_sp
             # sliding
             if boost_tile != None:
                 if (boost_tile["direction"] != direction) or (boost_tile["direction"] != opposite_directions[direction]):
-                    deviation_points[boost_tile["direction"]
-                                     ] += boost_tile["speed"]
+                    deviation_points[boost_tile["direction"]] += boost_tile["speed"]
+                    deviation_points[opposite_directions[boost_tile["direction"]]] = min(deviation_points[opposite_directions[boost_tile["direction"]]] - boost_tile["speed"], 0)
                     for sliding_dir in directions:
                         if deviation_points[sliding_dir] >= deviation[next_tile["type"]]:
                             # make sliding
@@ -143,7 +143,7 @@ opt_path = []
 
 def get_next_best_move(path, state: Dict[str, Any]):
     stamina = state["yourPlayer"]["stamina"]
-    stamina_threshold = 40
+    stamina_threshold = 65
     steps_from_path = 1
     current_best = {"index": 0, "stamina_cost": np.inf,
                     "move": "step", "direction": ""}
