@@ -65,11 +65,7 @@ def add_neighbours(tiles, G, own: Tuple[int, int]):
         neighbours[2] = (own[0]-1, own[1])
         neighbours[3] = (own[0], own[1]-1)
         for i in range(len(neighbours)):
-            x, y = neighbours[i]
-            if (x >= 0 and x < 100 and y >= 0 and y < 100):
-                create_connection(G, own, neighbours[i], tiles)
-            else:
-                neighbours[i] = None
+            create_connection(G, own, neighbours[i], tiles)
 
     return neighbours
 
@@ -84,9 +80,12 @@ def create_connection(G, own, other, tiles):
             tiles[own[1]][own[0]])
         if current_tile_push is not None:
             if moving_direction == current_tile_push:
-                tile_cost -= boost*0.8
-            elif moving_direction != opposite_directions[current_tile_push]:
-                tile_cost += boost*0.8
+                tile_cost -= boost*0.4
+            elif moving_direction == opposite_directions[current_tile_push]:
+                tile_cost += boost*0.4
+            else:
+                tile_cost += boost*0.15
+
         if tile_cost < 0:
             tile_cost = 1
 
