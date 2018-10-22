@@ -93,12 +93,12 @@ def create_connection(G, own, other, tiles):
         tile_cost = (tile_costs[tiles[other[1]][other[0]]["type"]] + boost)
 
         current_tile_push = get_elevation_stream_direction(
-            tiles[other[1]][other[0]])
+            tiles[own[1]][own[0]])
         if current_tile_push is not None:
             if moving_direction == current_tile_push:
-                tile_cost -= 5
+                tile_cost -= boost*0.8
             elif moving_direction != opposite_directions[current_tile_push]:
-                tile_cost += 5
+                tile_cost += boost*0.8
         if tile_cost < 0:
             tile_cost = 1
         G.add_edge(own, other, weight=(tile_cost))

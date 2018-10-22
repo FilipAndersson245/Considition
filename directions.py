@@ -46,16 +46,16 @@ def get_boost_value(direction: str, tile) -> int:
         if "waterstream" in tile:
             stream = tile["waterstream"]
             if stream["direction"] == direction:
-                return stream["speed"]
+                return -stream["speed"]
             elif stream["direction"] == opposite_directions[direction]:
-                return (0-stream["speed"])
+                return stream["speed"]
     else:
         if "elevation" in tile:
             elevation = tile["elevation"]
             if elevation["direction"] == direction:
-                return (0-elevation["amount"])
-            elif elevation["direction"] == opposite_directions[direction]:
                 return elevation["amount"]
+            elif elevation["direction"] == opposite_directions[direction]:
+                return -elevation["amount"]
     return 0
 
 

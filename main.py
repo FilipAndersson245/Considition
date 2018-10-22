@@ -94,6 +94,7 @@ def solution3(game_id):
             path_index += 1
             if direction == None:
                 path_index = 0
+                #Create new path everytime devienting from standard path this will incresse time calculating
                 # path = astar_shortest_path(state, current_position, goal_point)
                 direction = get_dir(
                     current_position, path[path_index])
