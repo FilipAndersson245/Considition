@@ -50,6 +50,8 @@ def foo(direction: str, tyle: str) -> str:
 
 
 def get_tile_in_direction(tiles, direction, position) -> Optional[Dict[str, Any]]:
+    if 0 in position or 99 in position:
+        return None
     if direction == 'n':
         return tiles[position[1]-1][position[0]]
     elif direction == 's':
@@ -80,18 +82,31 @@ def estimated_output_position(state: Dict[str, Any], position, stamina, directio
     stamina = state["yourPlayer"]["stamina"]
     tiles = state["tileInfo"]
     deviation_points = {"n": 0, "e": 0, "s": 0, "w": 0, }
+    deviation_tiles_passed = {"n": 0, "e": 0, "s": 0, "w": 0, }
+    last_deviation_direction = ""
     number_of_weather_tiles = 0
+    mps = []
 
     if movement_speed == "step":
-        return get_position_in_direction(direction, player_position), weather_cost if "weather" in get_tile_in_direction(tiles, direction, player_position) else 0
+        tile = get_tile_in_direction(tiles, direction, player_position)
+        pos = get_position_in_direction(direction, player_position)
+        if tile == None:
+            return (position, 999)
+        if "weather" in tile:
+            return (pos, weather_cost)
+        else:
+            return (pos, 0)
 
     current_movment_points = real_movment_points(stamina, movement_speed)
     while current_movment_points > 0:
+        mps.append(current_movment_points)
         # check if inside forest, no good
         if is_impassable(state["tileInfo"][player_position[1]][player_position[0]]["type"]):
             break
 
         next_tile = get_tile_in_direction(tiles, direction, player_position)
+        if next_tile == None:
+            return position, 999
         boost_tile = get_boost_dir(next_tile)
         if "weather" in next_tile:
             number_of_weather_tiles += 1
@@ -99,32 +114,38 @@ def estimated_output_position(state: Dict[str, Any], position, stamina, directio
 
         tile_cost = 20 if is_impassable(
             next_tile["type"]) else tile_costs[next_tile["type"]]  # base cost
-        if boost_tile != None:
-            if boost_tile["direction"] == direction:
-                tile_cost -= boost_tile["speed"]
-            elif boost_tile["direction"] == opposite_directions[direction]:
-                tile_cost += boost_tile["speed"]
 
-        if current_movment_points > tile_cost:
+        if current_movment_points >= tile_cost:
             # "make virtual movement"
             player_position = get_position_in_direction(
                 direction, player_position)
+            if boost_tile != None:
+                if boost_tile["direction"] == direction:
+                    tile_cost -= boost_tile["speed"]
+                elif boost_tile["direction"] == opposite_directions[direction]:
+                    tile_cost += boost_tile["speed"]
             current_movment_points -= tile_cost
 
             # sliding
             if boost_tile != None:
                 if (boost_tile["direction"] != direction) or (boost_tile["direction"] != opposite_directions[direction]):
-                    deviation_points[boost_tile["direction"]] += boost_tile["speed"]
-                    deviation_points[opposite_directions[boost_tile["direction"]]] = min(deviation_points[opposite_directions[boost_tile["direction"]]] - boost_tile["speed"], 0)
-                    for sliding_dir in directions:
-                        if deviation_points[sliding_dir] >= deviation[next_tile["type"]]:
-                            # make sliding
-                            player_position = player_position = get_position_in_direction(
-                                sliding_dir, player_position)
-                            deviation_points[sliding_dir] -= deviation[next_tile["type"]]
+                    deviation_tiles_passed[boost_tile["direction"]] += 1
+                    
+                    if (deviation_tiles_passed[boost_tile["direction"]] > 1) and last_deviation_direction == boost_tile["direction"]:
+                        deviation_points[boost_tile["direction"]] += boost_tile["speed"]
+                        deviation_points[opposite_directions[boost_tile["direction"]]] = min(deviation_points[opposite_directions[boost_tile["direction"]]] - boost_tile["speed"], 0)
+                        for sliding_dir in directions:
+                            if deviation_points[sliding_dir] >= deviation[next_tile["type"]]:
+                                # make sliding
+                                player_position = player_position = get_position_in_direction(
+                                    sliding_dir, player_position)
+                                deviation_points[sliding_dir] -= deviation[next_tile["type"]]
+                last_deviation_direction = boost_tile["direction"]
 
         else:
             break
+    # print("dir: " + direction + ", speed: " + str(movement_speed) + ": " + str(mps))
+
     return player_position, number_of_weather_tiles
 
 
@@ -184,22 +205,230 @@ def get_next_best_move(path, state: Dict[str, Any]):
         all_pos.append(estimated_output_position(state, player_position, stamina, current_best["direction"], current_best["move"])[0])
     return current_best
 
-
 class P_move:
-    def __init__(self, index, direction, move, position, stamina, previous_moves):
-        self.index = index
+    def __init__(self, direction, move, position, stamina, previous_moves):
         self.direction = direction
         self.move = move
         self.position = position
         self.stamina = stamina
         self.previous_moves = previous_moves
 
+def get_three_best_moves(path, state: Dict[str, Any]):
+    gen_1 = []
+    gen_2 = []
+    gen_3 = []
+    stamina_threshold = 60
+    radius = 1
+    stamina = state["yourPlayer"]["stamina"]
+    player_position = (state["yourPlayer"]["xPos"], state["yourPlayer"]["yPos"])
+
+
+    for move in moves:
+        for direction in directions:
+            position, weather_tiles = estimated_output_position(state, player_position, stamina, direction, move)
+            if is_impassable(state["tileInfo"][position[1]][position[0]]["type"]):
+                continue
+            current_stamina = stamina - (stamina_costs[move] + (weather_tiles * weather_cost))
+            current_stamina += stamina_regeneration(current_stamina)
+            gen_1.append( 
+                P_move(
+                    direction,
+                    move,
+                    position,
+                    current_stamina,
+                    []
+                ) 
+            )
+
+    for current_branch in gen_1:
+        for move in moves:
+            if new_stamina(current_branch.stamina, move) < stamina_threshold:
+                acc_moves = current_branch.previous_moves + [current_branch]
+                current_stamina = current_branch.stamina
+                current_stamina += stamina_regeneration(current_stamina) + 15
+                gen_2.append( 
+                    P_move(
+                        "",
+                        "rest",
+                        current_branch.position,
+                        current_stamina,
+                        acc_moves
+                    )
+                )
+                continue
+            for direction in directions:
+                position, weather_tiles = estimated_output_position(state, current_branch.position, current_branch.stamina, direction, move)
+                acc_moves = current_branch.previous_moves + [current_branch]
+                current_stamina = current_branch.stamina - (stamina_costs[move] + (weather_tiles * weather_cost))
+                current_stamina += stamina_regeneration(current_stamina)
+
+                gen_2.append( 
+                    P_move(
+                        direction,
+                        move,
+                        position,
+                        current_stamina,
+                        acc_moves
+                    )
+                )
+
+    for current_branch in gen_2:
+        for move in moves:
+            if new_stamina(current_branch.stamina, move) < stamina_threshold:
+                acc_moves = current_branch.previous_moves + [current_branch]
+                current_stamina = current_branch.stamina
+                current_stamina += stamina_regeneration(current_stamina) + 15
+                gen_3.append( 
+                    P_move(
+                        "",
+                        "rest",
+                        current_branch.position,
+                        current_stamina,
+                        acc_moves
+                    )
+                )
+                continue
+            for direction in directions:
+                position, weather_tiles = estimated_output_position(state, current_branch.position, current_branch.stamina, direction, move)
+                acc_moves = current_branch.previous_moves + [current_branch]
+                current_stamina = current_branch.stamina - (stamina_costs[move] + (weather_tiles * weather_cost))
+                current_stamina += stamina_regeneration(current_stamina)
+
+                gen_3.append( 
+                    P_move(
+                        direction,
+                        move,
+                        position,
+                        current_stamina,
+                        acc_moves
+                    )
+                )
+
+    current_best = {"index": 0, "stamina": np.inf, "move": None}
+
+    for p_move in gen_3:
+        if is_impassable(state["tileInfo"][p_move.position[1]][p_move.position[0]]["type"]):
+            continue
+
+        # CHANGE THIS PROBABLY BECAUSE ITS NOT THE BEST ROUTE
+        if position == path[-1]:
+            current_best = {"index": np.inf, "stamina": p_move.stamina, "move": p_move}
+            break
+        
+        indices = find_indices(path, lambda tile: is_around(tile, p_move.position, radius))
+        if len(indices) == 0:
+            # not close enough to path
+            continue
+        local_best = indices[-1]
+    
+        # sorts first on how long to go, then on stamina
+        if local_best > current_best["index"]:
+            current_best = {
+                "index": local_best, "stamina": p_move.stamina, "move": p_move}
+        elif (local_best == current_best["index"]) and (p_move.stamina > current_best["stamina"]):
+            current_best = {
+                "index": local_best, "stamina": p_move.stamina, "move": p_move}
+    last = current_best["move"]
+    return_array = last.previous_moves + [last]
+
+    return return_array
+
+
+def get_n_best_moves(n, path, state: Dict[str, Any]):
+    generations = []
+    stamina_threshold = 60
+    radius = 1
+    stamina = state["yourPlayer"]["stamina"]
+    player_position = (state["yourPlayer"]["xPos"], state["yourPlayer"]["yPos"])
+
+    generations.append([])
+    for move in moves:
+        for direction in directions:
+            position, weather_tiles = estimated_output_position(state, player_position, stamina, direction, move)
+            if is_impassable(state["tileInfo"][position[1]][position[0]]["type"]):
+                continue
+            current_stamina = stamina - (stamina_costs[move] + (weather_tiles * weather_cost))
+            current_stamina += stamina_regeneration(current_stamina)
+            generations[0].append( 
+                P_move(
+                    direction,
+                    move,
+                    position,
+                    current_stamina,
+                    []
+                ) 
+            )
+
+    for g in range(n-1):
+        generations.append([])
+        for current_branch in generations[g]:
+            for move in moves:
+                if new_stamina(current_branch.stamina, move) < stamina_threshold:
+                    acc_moves = current_branch.previous_moves + [current_branch]
+                    current_stamina = current_branch.stamina
+                    current_stamina += stamina_regeneration(current_stamina) + 15
+                    generations[g+1].append( 
+                        P_move(
+                            "",
+                            "rest",
+                            current_branch.position,
+                            current_stamina,
+                            acc_moves
+                        )
+                    )
+                    continue
+                for direction in directions:
+                    position, weather_tiles = estimated_output_position(state, current_branch.position, current_branch.stamina, direction, move)
+                    acc_moves = current_branch.previous_moves + [current_branch]
+                    current_stamina = current_branch.stamina - (stamina_costs[move] + (weather_tiles * weather_cost))
+                    current_stamina += stamina_regeneration(current_stamina)
+
+                    generations[g+1].append( 
+                        P_move(
+                            direction,
+                            move,
+                            position,
+                            current_stamina,
+                            acc_moves
+                        )
+                    )
+
+    current_best = {"index": 0, "stamina": np.inf, "move": None}
+
+    for p_move in generations[-1]:
+        if is_impassable(state["tileInfo"][p_move.position[1]][p_move.position[0]]["type"]):
+            continue
+
+        # CHANGE THIS PROBABLY BECAUSE ITS NOT THE BEST ROUTE
+        if position == path[-1]:
+            current_best = {"index": np.inf, "stamina": p_move.stamina, "move": p_move}
+            break
+        
+        indices = find_indices(path, lambda tile: is_around(tile, p_move.position, radius))
+        if len(indices) == 0:
+            # not close enough to path
+            continue
+        local_best = indices[-1]
+    
+        # sorts first on how long to go, then on stamina
+        if local_best > current_best["index"]:
+            current_best = {
+                "index": local_best, "stamina": p_move.stamina, "move": p_move}
+        elif (local_best == current_best["index"]) and (p_move.stamina > current_best["stamina"]):
+            current_best = {
+                "index": local_best, "stamina": p_move.stamina, "move": p_move}
+    last = current_best["move"]
+    return_array = last.previous_moves + [last]
+
+    return return_array
+
+
 def get_all_best_moves(path, state: Dict[str, Any]):
     goal_point = path[-1]
     radius = 3
     moves_tree = []
     stamina_threshold = 65
-    best_move_set = P_move(np.inf, None, None, None, None, None)
+    best_move_set = P_move(None, None, None, None, [None] * 100000)
     stamina = state["yourPlayer"]["stamina"]
     player_position = (state["yourPlayer"]["xPos"], state["yourPlayer"]["yPos"])
     
@@ -217,7 +446,6 @@ def get_all_best_moves(path, state: Dict[str, Any]):
             current_stamina += stamina_regeneration(current_stamina)
             moves_tree.append( 
                 P_move(
-                    0, 
                     direction,
                     move,
                     position,
@@ -227,23 +455,22 @@ def get_all_best_moves(path, state: Dict[str, Any]):
             )
     
     while moves_tree != []:
+        print(len(moves_tree))
         current_branch = moves_tree.pop()
 
         if current_branch.position == goal_point:
-            if current_branch.index < best_move_set.index:
+            if len(current_branch.previous_moves) < len(best_move_set.previous_moves):
                 best_move_set = current_branch
-                print(best_move_set.index)
+                print(len(best_move_set.previous_moves))
             continue
         
         for move in moves:
             if new_stamina(current_branch.stamina, move) < stamina_threshold:
-                acc_moves = current_branch.previous_moves
-                acc_moves.append(current_branch)
+                acc_moves = current_branch.previous_moves + [current_branch]
                 current_stamina = current_branch.stamina
                 current_stamina += stamina_regeneration(current_stamina) + 15
                 moves_tree.append( 
                     P_move(
-                        current_branch.index+1, 
                         "",
                         "rest",
                         current_branch.position,
@@ -261,14 +488,12 @@ def get_all_best_moves(path, state: Dict[str, Any]):
                 if not any([is_around(pos, position, radius) for pos in path]):
                     continue
 
-                acc_moves = current_branch.previous_moves
-                acc_moves.append(current_branch)
+                acc_moves = current_branch.previous_moves + [current_branch]
                 current_stamina = current_branch.stamina - (stamina_costs[move] + (weather_tiles * weather_cost))
                 current_stamina += stamina_regeneration(current_stamina)
 
                 moves_tree.append( 
                     P_move(
-                        current_branch.index+1, 
                         direction,
                         move,
                         position,

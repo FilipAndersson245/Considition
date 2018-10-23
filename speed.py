@@ -4,7 +4,7 @@ moves = ["fast", "medium", "slow", "step"]
 
 
 def stamina_regeneration(current_stamina: int)->int:
-    return 15 if current_stamina < 65 else 20
+    return 15 if current_stamina < 60 else 20
 
 
 def new_stamina(current_stamina: int, speed: str)->int:

@@ -13,7 +13,7 @@ from directions import (directions, get_dir, tree_in_any_direction,
                         tree_in_current_direction)
 from helpers.draw_map import draw_map
 from board import map_to_board_first, get_board, astar_shortest_path
-from tiles import get_next_best_move, get_goal, all_pos, get_all_best_moves, P_move
+from tiles import get_next_best_move, get_goal, all_pos, get_all_best_moves, P_move, get_three_best_moves, is_around, get_n_best_moves
 from pprint import pprint
 
 
@@ -69,6 +69,7 @@ def solution2(game_id):
 
 def solution3(game_id):
     initial_state = _api.get_game(game_id)
+    offs = 0
 
     if(initial_state["success"] == True):
         state = initial_state["gameState"]
@@ -78,7 +79,7 @@ def solution3(game_id):
         current_position = (current_player["xPos"], current_player["yPos"])
         path_index = 0
         map_to_board_first(tiles)
-        goal_point = (16, 75) #get_goal(tiles)
+        goal_point = get_goal(tiles)
 
         path = astar_shortest_path(state, current_position, goal_point)
         draw_map(state, path)
@@ -100,6 +101,8 @@ def solution3(game_id):
 
             next_move = get_next_best_move(path, state)
 
+            print(current_position)
+
             if next_move["direction"] == "":
                 response = _api.rest(game_id)
             elif next_move["move"] == "step":
@@ -107,17 +110,28 @@ def solution3(game_id):
             else:
                 response = _api.make_move(
                     game_id, next_move["direction"], next_move["move"])
-            print(current_position)
 
             print("Stamina: " + str(current_player["stamina"]))
             state = response["gameState"]
             # time.sleep(2)
+
+            current_player = state["yourPlayer"]
+            current_position = (current_player["xPos"], current_player["yPos"])
+            print("Position: "+str(current_position))
+            print("Predicted: "+str(all_pos[-1]))
+            off = abs(current_position[0] - all_pos[-1][0]) + abs(current_position[1] - all_pos[-1][1])
+            offs += off
+            print("Off by: "+str(off))
+            print()
+
             # weird hard check when game won't stop
             if ("message" in response) and (response["message"] == "Game has finished"):
                 break
         draw_map(state, path)
         print("Turns: "+str(turn))
         print("Predicted: "+str(len(all_pos)))
+        print("MisPredicts: "+str(offs))
+        print("Game-id: "+game_id)
     else:
         print(initial_state["message"])
 
@@ -159,6 +173,45 @@ def solution4(game_id):
         print(initial_state["message"])
 
 
+def solution5(game_id):
+    initial_state = _api.get_game(game_id)
+
+    if(initial_state["success"] == True):
+        state = initial_state["gameState"]
+        turn = state["turn"]
+        tiles = state["tileInfo"]
+        current_player = state["yourPlayer"]
+        current_position = (current_player["xPos"], current_player["yPos"])
+        path_index = 0
+        map_to_board_first(tiles)
+        goal_point = get_goal(tiles)
+
+        path = astar_shortest_path(state, current_position, goal_point)
+        draw_map(state, path)
+
+        while not is_around(goal_point, current_position, 1):
+            moves = get_n_best_moves(3, path, state)
+            for next_move in moves:
+                turn += 1
+                all_pos.append(next_move.position)
+                if next_move.direction == "":
+                    response = _api.rest(game_id)
+                elif next_move.move == "step":
+                    response = _api.step(game_id, next_move.direction)
+                else:
+                    response = _api.make_move(
+                        game_id, next_move.direction, next_move.move)
+
+            state = response["gameState"]
+            current_player = state["yourPlayer"]
+            current_position = (current_player["xPos"], current_player["yPos"])
+        draw_map(state, path)
+        print("Turns: "+str(turn))
+        print("Predicted: "+str(len(all_pos)))
+    else:
+        print(initial_state["message"])
+
+
 def main():
     system('cls')
     _api.end_previous_games_if_any()
@@ -170,7 +223,7 @@ def main():
         print("Joined and readied! Solving...")
         # webbrowser.open(
         #    'http://www.theconsidition.se/ironmandebugvisualizer?gameId={}'.format(game_id), new = 2)
-        solution4(game_id)
+        solution5(game_id)
     # game_state = _api.get_game(game_id)
     # drawMap(game_state)
 
