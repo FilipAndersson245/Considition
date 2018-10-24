@@ -93,7 +93,7 @@ def estimated_output_position(state: Dict[str, Any], position, stamina, directio
         if tile == None:
             return (position, 999)
         if "weather" in tile:
-            return (pos, weather_cost)
+            return (pos, 1)
         else:
             return (pos, 0)
 
@@ -115,32 +115,29 @@ def estimated_output_position(state: Dict[str, Any], position, stamina, directio
         tile_cost = 20 if is_impassable(
             next_tile["type"]) else tile_costs[next_tile["type"]]  # base cost
 
+        if boost_tile != None:
+            if boost_tile["direction"] == direction:
+                tile_cost -= boost_tile["speed"]
+            elif boost_tile["direction"] == opposite_directions[direction]:
+                tile_cost += boost_tile["speed"]
+
         if current_movment_points >= tile_cost:
             # "make virtual movement"
             player_position = get_position_in_direction(
                 direction, player_position)
-            if boost_tile != None:
-                if boost_tile["direction"] == direction:
-                    tile_cost -= boost_tile["speed"]
-                elif boost_tile["direction"] == opposite_directions[direction]:
-                    tile_cost += boost_tile["speed"]
             current_movment_points -= tile_cost
 
             # sliding
             if boost_tile != None:
-                if (boost_tile["direction"] != direction) or (boost_tile["direction"] != opposite_directions[direction]):
-                    deviation_tiles_passed[boost_tile["direction"]] += 1
-                    
-                    if (deviation_tiles_passed[boost_tile["direction"]] > 1) and last_deviation_direction == boost_tile["direction"]:
-                        deviation_points[boost_tile["direction"]] += boost_tile["speed"]
-                        deviation_points[opposite_directions[boost_tile["direction"]]] = min(deviation_points[opposite_directions[boost_tile["direction"]]] - boost_tile["speed"], 0)
-                        for sliding_dir in directions:
-                            if deviation_points[sliding_dir] >= deviation[next_tile["type"]]:
-                                # make sliding
-                                player_position = player_position = get_position_in_direction(
-                                    sliding_dir, player_position)
-                                deviation_points[sliding_dir] -= deviation[next_tile["type"]]
-                last_deviation_direction = boost_tile["direction"]
+                if (boost_tile["direction"] != direction) and (boost_tile["direction"] != opposite_directions[direction]):
+                    deviation_points[boost_tile["direction"]] = max(deviation_points[boost_tile["direction"]] + boost_tile["speed"] - deviation_points[opposite_directions[boost_tile["direction"]]], 0)
+                    deviation_points[opposite_directions[boost_tile["direction"]]] = max(deviation_points[opposite_directions[boost_tile["direction"]]] - boost_tile["speed"], 0)
+                    for sliding_dir in directions:
+                        if deviation_points[sliding_dir] >= deviation[next_tile["type"]]:
+                            # make sliding
+                            player_position = player_position = get_position_in_direction(
+                                sliding_dir, player_position)
+                            deviation_points[sliding_dir] -= deviation[next_tile["type"]]
 
         else:
             break

@@ -207,7 +207,6 @@ def solution5(game_id):
             current_position = (current_player["xPos"], current_player["yPos"])
         draw_map(state, path)
         print("Turns: "+str(turn))
-        print("Predicted: "+str(len(all_pos)))
     else:
         print(initial_state["message"])
 
@@ -223,7 +222,7 @@ def main():
         print("Joined and readied! Solving...")
         # webbrowser.open(
         #    'http://www.theconsidition.se/ironmandebugvisualizer?gameId={}'.format(game_id), new = 2)
-        solution5(game_id)
+        solution3(game_id)
     # game_state = _api.get_game(game_id)
     # drawMap(game_state)
 

@@ -3,7 +3,7 @@ from typing import Tuple, Dict, Any, Optional, List
 
 _Position = Tuple[int, int]
 directions: List[str] = ["n", "e", "s", "w"]
-opposite_directions: Dict[str, str] = {"n": "s", "e": "w", "s": "e", "w": "e"}
+opposite_directions: Dict[str, str] = {"n": "s", "e": "w", "s": "n", "w": "e"}
 
 
 def get_boost_dir(tile):
