@@ -191,14 +191,25 @@ def solution5(game_id):
 
         while not is_around(goal_point, current_position, 1):
             powerups = current_player["powerupInventory"]
-            active_powerups = current_player["activePowerups"]
+            active_powerups = map_active_powerups(current_player["activePowerups"])
             tile = state["tileInfo"][current_position[1]][current_position[0]]
-            for powerup in powerups:
-                if get_powerup_terrain(powerup) == tile["type"] and powerup not in active_powerups:
-                    response = _api.use_powerup(game_id, powerup)
-                    state = response["gameState"]
-                    break
-            # TODO: USE POWERUP IF FULL
+
+            if len(powerups) == 3:
+                response = None
+                if powerups[2] in drop_list:
+                    response = _api.drop_powerup(game_id, powerups[2])
+                else:
+                    response = _api.use_powerup(game_id, powerups[2])
+                state = response["gameState"]
+                powerups = current_player["powerupInventory"]
+            else:
+                for powerup in powerups:
+                    if get_powerup_terrain(powerup) == tile["type"] and powerup not in active_powerups:
+                        response = _api.use_powerup(game_id, powerup)
+                        state = response["gameState"]
+                        powerups = current_player["powerupInventory"]
+                        break
+
 
             moves = get_n_best_moves(3, path, state)
             for next_move in moves:

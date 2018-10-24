@@ -11,6 +11,14 @@ deviation = {"water": 15, "trail": 25, "road": 40}
 weather_cost = 7
 
 
+def get_real_tile_cost(tile_type, active_powerups):
+    for powerup in active_powerups:
+        if active_powerups[powerup] > 0:
+            if get_powerup_terrain(powerup) == tile_type:
+                return tile_costs[tile_type] * 0.75
+    return tile_costs[tile_type]
+
+
 def get_goal(tiles) -> Tuple[int, int]:
     for y, row in enumerate(tiles):
         for x, tile in enumerate(row):
@@ -88,6 +96,7 @@ def estimated_output_position(state: Dict[str, Any], position, stamina, directio
     number_of_weather_tiles = 0
     mps = []
     powerups_collected = []
+    active_powerups = map_active_powerups(state["yourPlayer"]["activePowerups"])
 
     if movement_speed == "step":
         tile = get_tile_in_direction(tiles, direction, player_position)
@@ -120,8 +129,7 @@ def estimated_output_position(state: Dict[str, Any], position, stamina, directio
             powerups_collected.append(powerup)
 
 
-        tile_cost = 20 if is_impassable(
-            next_tile["type"]) else tile_costs[next_tile["type"]]  # base cost
+        tile_cost = 20 if is_impassable(next_tile["type"]) else get_real_tile_cost(next_tile["type"], active_powerups)  # base cost
 
         if boost_tile != None:
             if boost_tile["direction"] == direction:
@@ -134,6 +142,10 @@ def estimated_output_position(state: Dict[str, Any], position, stamina, directio
             player_position = get_position_in_direction(
                 direction, player_position)
             current_movment_points -= tile_cost
+
+            if next_tile["type"] in terrain_powerups:
+                if terrain_powerups[next_tile["type"]] in active_powerups:
+                    active_powerups[terrain_powerups[next_tile["type"]]] -= 1
 
             # sliding
             if boost_tile != None:
@@ -412,7 +424,7 @@ def get_n_best_moves(n, path, state: Dict[str, Any]):
         # CHECK REST OF PATH HERE #3
         output_tile = state["tileInfo"][p_move.position[1]][p_move.position[0]]
         for powerup in p_move.powerups:
-            if get_powerup_terrain(powerup) == output_tile["type"] and powerup not in state["yourPlayer"]["activePowerups"]:
+            if get_powerup_terrain(powerup) == output_tile["type"] and powerup not in map_active_powerups(state["yourPlayer"]["activePowerups"]):
                 finals.append(p_move)
                 break
 
@@ -443,6 +455,31 @@ def get_n_best_moves(n, path, state: Dict[str, Any]):
         elif (local_best == current_best["index"]) and (p_move.stamina > current_best["stamina"]):
             current_best = {
                 "index": local_best, "stamina": p_move.stamina, "move": p_move}
+    if current_best["move"] == None:
+        finals = generations[-1]
+        for p_move in finals:
+            if is_impassable(state["tileInfo"][p_move.position[1]][p_move.position[0]]["type"]):
+                continue
+
+            # CHANGE THIS PROBABLY BECAUSE ITS NOT THE BEST ROUTE
+            if position == path[-1]:
+                current_best = {"index": np.inf, "stamina": p_move.stamina, "move": p_move}
+                break
+            
+            indices = find_indices(path, lambda tile: is_around(tile, p_move.position, radius))
+            if len(indices) == 0:
+                # not close enough to path
+                continue
+            local_best = indices[-1]
+        
+
+            # sorts first on how long to go, then on stamina
+            if local_best > current_best["index"]:
+                current_best = {
+                    "index": local_best, "stamina": p_move.stamina, "move": p_move}
+            elif (local_best == current_best["index"]) and (p_move.stamina > current_best["stamina"]):
+                current_best = {
+                    "index": local_best, "stamina": p_move.stamina, "move": p_move}
     last = current_best["move"]
     return_array = last.previous_moves + [last]
     powerup_bag = last.powerups

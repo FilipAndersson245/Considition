@@ -17,9 +17,20 @@ powerup_terrain = {
     "Shoes": "trail",
     "Cycletire": "road"
 }
+terrain_powerups = {
+    "water": "Flippers",
+    "trail": "Shoes",
+    "road": "Cycletire"
+}
+drop_list = [
+    "BicycleHandlebar",
+    "Spikeshoes",
+    "Cyclops"
+]
 
 powerup_bag = []
 powerups_active = []
+
 
 def get_powerup(tile):
     if "powerup" in tile:
@@ -35,3 +46,9 @@ def update_powerups_value():
 
 def calculate_powerups(previous_powerups, new_powerups):
     return (previous_powerups + new_powerups)[:3]
+
+def map_active_powerups(active_powerups):
+    obj = {}
+    for powerup in active_powerups:
+        obj[powerup["name"]] = powerup["duration"]
+    return obj
