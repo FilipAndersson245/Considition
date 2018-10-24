@@ -119,7 +119,8 @@ def solution3(game_id):
             current_position = (current_player["xPos"], current_player["yPos"])
             print("Position: "+str(current_position))
             print("Predicted: "+str(all_pos[-1]))
-            off = abs(current_position[0] - all_pos[-1][0]) + abs(current_position[1] - all_pos[-1][1])
+            off = abs(current_position[0] - all_pos[-1][0]) + \
+                abs(current_position[1] - all_pos[-1][1])
             offs += off
             print("Off by: "+str(off))
             print()
@@ -189,9 +190,10 @@ def solution5(game_id):
         path = astar_shortest_path(state, current_position, goal_point)
         # draw_map(state, path)
 
-        while not is_around(goal_point, current_position, 1):
+        while (not is_around(goal_point, current_position, 1)):
             powerups = current_player["powerupInventory"]
-            active_powerups = map_active_powerups(current_player["activePowerups"])
+            active_powerups = map_active_powerups(
+                current_player["activePowerups"])
             tile = state["tileInfo"][current_position[1]][current_position[0]]
 
             if len(powerups) == 3:
@@ -209,7 +211,6 @@ def solution5(game_id):
                         state = response["gameState"]
                         powerups = current_player["powerupInventory"]
                         break
-
 
             moves = get_n_best_moves(3, path, state)
             for next_move in moves:
@@ -253,12 +254,22 @@ def main():
     print(game_id)
     if readied_game is not None:
         print("Joined and readied! Solving...")
-        # webbrowser.open(
-        #    'http://www.theconsidition.se/ironmandebugvisualizer?gameId={}'.format(game_id), new = 2)
-        solution5(game_id)
+
+        return (game_id, solution5(game_id))
+
     # game_state = _api.get_game(game_id)
     # drawMap(game_state)
 
 
 if __name__ == "__main__":
-    main()
+    turns_result = []
+    avg = 0
+    for i in range(4):
+        turns_result.append(main())
+        # webbrowser.open(
+        #     'http://www.theconsidition.se/ironmandebugvisualizer?gameId={}'.format(turns_result[i][0]), new=2)
+    for i in range(4):
+        print("Turns for round {}: {}".format(
+            turns_result[i][0], str(turns_result[i][1])))
+        avg += turns_result[i][1]
+    print("avg: " + str(avg/4))
