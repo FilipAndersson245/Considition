@@ -3,6 +3,7 @@ from directions import opposite_directions, directions, get_boost_dir
 from speed import movement_points, real_movment_points, moves, stamina_costs, new_stamina, stamina_regeneration
 import numpy as np
 import heapq
+from powerups import *
 
 tile_costs = {"water": 45, "road": 31, "trail": 40, "grass": 50,
               "forest": np.inf, "rockywater": np.inf, "start": 50, "win": 0}
@@ -77,7 +78,7 @@ def get_position_in_direction(direction, position) -> Optional[Tuple[int, int]]:
         return None
 
 
-def estimated_output_position(state: Dict[str, Any], position, stamina, direction: str, movement_speed: str):
+def estimated_output_position(state: Dict[str, Any], position, stamina, direction: str, movement_speed: str) -> ((int, int), int, [str]):
     player_position = position
     stamina = state["yourPlayer"]["stamina"]
     tiles = state["tileInfo"]
@@ -86,16 +87,20 @@ def estimated_output_position(state: Dict[str, Any], position, stamina, directio
     last_deviation_direction = ""
     number_of_weather_tiles = 0
     mps = []
+    powerups_collected = []
 
     if movement_speed == "step":
         tile = get_tile_in_direction(tiles, direction, player_position)
+
         pos = get_position_in_direction(direction, player_position)
         if tile == None:
-            return (position, 999)
+            return (position, 999, [])
+        powerup = get_powerup(tile)
+        powerups_collected.append(powerup)
         if "weather" in tile:
-            return (pos, 1)
+            return (pos, 1, powerups_collected)
         else:
-            return (pos, 0)
+            return (pos, 0, powerups_collected)
 
     current_movment_points = real_movment_points(stamina, movement_speed)
     while current_movment_points > 0:
@@ -106,10 +111,13 @@ def estimated_output_position(state: Dict[str, Any], position, stamina, directio
 
         next_tile = get_tile_in_direction(tiles, direction, player_position)
         if next_tile == None:
-            return position, 999
+            return position, 999, []
         boost_tile = get_boost_dir(next_tile)
         if "weather" in next_tile:
             number_of_weather_tiles += 1
+        powerup = get_powerup(next_tile)
+        if powerup != None:
+            powerups_collected.append(powerup)
 
 
         tile_cost = 20 if is_impassable(
@@ -143,7 +151,7 @@ def estimated_output_position(state: Dict[str, Any], position, stamina, directio
             break
     # print("dir: " + direction + ", speed: " + str(movement_speed) + ": " + str(mps))
 
-    return player_position, number_of_weather_tiles
+    return player_position, number_of_weather_tiles, powerups_collected
 
 
 def find_indices(lst, condition):
@@ -158,12 +166,12 @@ all_pos = []
 all_opt = []
 opt_path = []
 
+stamina_threshold = 60
 
 def get_next_best_move(path, state: Dict[str, Any]):
     stamina = state["yourPlayer"]["stamina"]
     player_position = (state["yourPlayer"]["xPos"],
                        state["yourPlayer"]["yPos"])
-    stamina_threshold = 65
     steps_from_path = 1
     current_best = {"index": 0, "stamina_cost": np.inf,
                     "move": "step", "direction": ""}
@@ -174,7 +182,7 @@ def get_next_best_move(path, state: Dict[str, Any]):
             continue
         stamina_cost = stamina_costs[move]
         for direction in directions:
-            position, weather_tiles = estimated_output_position(state, player_position, stamina, direction, move)
+            position, weather_tiles, _ = estimated_output_position(state, player_position, stamina, direction, move)
             stamina_cost += weather_tiles*weather_cost
 
             if is_impassable(state["tileInfo"][position[1]][position[0]]["type"]):
@@ -203,18 +211,18 @@ def get_next_best_move(path, state: Dict[str, Any]):
     return current_best
 
 class P_move:
-    def __init__(self, direction, move, position, stamina, previous_moves):
+    def __init__(self, direction, move, position, stamina, previous_moves, powerups):
         self.direction = direction
         self.move = move
         self.position = position
         self.stamina = stamina
         self.previous_moves = previous_moves
+        self.powerups = powerups
 
 def get_three_best_moves(path, state: Dict[str, Any]):
     gen_1 = []
     gen_2 = []
     gen_3 = []
-    stamina_threshold = 60
     radius = 1
     stamina = state["yourPlayer"]["stamina"]
     player_position = (state["yourPlayer"]["xPos"], state["yourPlayer"]["yPos"])
@@ -337,13 +345,15 @@ def get_n_best_moves(n, path, state: Dict[str, Any]):
     radius = 1
     stamina = state["yourPlayer"]["stamina"]
     player_position = (state["yourPlayer"]["xPos"], state["yourPlayer"]["yPos"])
+    state_powerups = state["yourPlayer"]["powerupInventory"]
 
     generations.append([])
     for move in moves:
         for direction in directions:
-            position, weather_tiles = estimated_output_position(state, player_position, stamina, direction, move)
+            position, weather_tiles, powerups_collected = estimated_output_position(state, player_position, stamina, direction, move)
             if is_impassable(state["tileInfo"][position[1]][position[0]]["type"]):
                 continue
+            total_powerups = calculate_powerups(state_powerups, powerups_collected)
             current_stamina = stamina - (stamina_costs[move] + (weather_tiles * weather_cost))
             current_stamina += stamina_regeneration(current_stamina)
             generations[0].append( 
@@ -352,7 +362,8 @@ def get_n_best_moves(n, path, state: Dict[str, Any]):
                     move,
                     position,
                     current_stamina,
-                    []
+                    [],
+                    total_powerups
                 ) 
             )
 
@@ -370,13 +381,15 @@ def get_n_best_moves(n, path, state: Dict[str, Any]):
                             "rest",
                             current_branch.position,
                             current_stamina,
-                            acc_moves
+                            acc_moves,
+                            current_branch.powerups
                         )
                     )
                     continue
                 for direction in directions:
-                    position, weather_tiles = estimated_output_position(state, current_branch.position, current_branch.stamina, direction, move)
+                    position, weather_tiles, powerups_collected = estimated_output_position(state, current_branch.position, current_branch.stamina, direction, move)
                     acc_moves = current_branch.previous_moves + [current_branch]
+                    acc_powerups = calculate_powerups(current_branch.powerups, powerups_collected)
                     current_stamina = current_branch.stamina - (stamina_costs[move] + (weather_tiles * weather_cost))
                     current_stamina += stamina_regeneration(current_stamina)
 
@@ -386,13 +399,28 @@ def get_n_best_moves(n, path, state: Dict[str, Any]):
                             move,
                             position,
                             current_stamina,
-                            acc_moves
+                            acc_moves,
+                            acc_powerups
                         )
                     )
 
     current_best = {"index": 0, "stamina": np.inf, "move": None}
 
+    finals = []
+
     for p_move in generations[-1]:
+        # CHECK REST OF PATH HERE #3
+        output_tile = state["tileInfo"][p_move.position[1]][p_move.position[0]]
+        for powerup in p_move.powerups:
+            if get_powerup_terrain(powerup) == output_tile["type"] and powerup not in state["yourPlayer"]["activePowerups"]:
+                finals.append(p_move)
+                break
+
+    if not finals:
+        finals = generations[-1]
+        
+
+    for p_move in finals:
         if is_impassable(state["tileInfo"][p_move.position[1]][p_move.position[0]]["type"]):
             continue
 
@@ -407,6 +435,7 @@ def get_n_best_moves(n, path, state: Dict[str, Any]):
             continue
         local_best = indices[-1]
     
+
         # sorts first on how long to go, then on stamina
         if local_best > current_best["index"]:
             current_best = {
@@ -416,6 +445,7 @@ def get_n_best_moves(n, path, state: Dict[str, Any]):
                 "index": local_best, "stamina": p_move.stamina, "move": p_move}
     last = current_best["move"]
     return_array = last.previous_moves + [last]
+    powerup_bag = last.powerups
 
     return return_array
 

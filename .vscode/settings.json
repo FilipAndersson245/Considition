@@ -1,5 +1,5 @@
 {
-  "python.pythonPath": "C:\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python36-32\\python.exe",
+  "python.pythonPath": "C:\\Program Files\\Python35\\python.exe",
   "files.exclude": {
     "**/.git": true,
     "**/.svn": true,
@@ -8,5 +8,6 @@
     "**/.DS_Store": true,
     "**/__pycache__": true,
     "**/.ropeproject": true
-  }
+  },
+  "terminal.integrated.scrollback": 10000
 }

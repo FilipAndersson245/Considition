@@ -15,7 +15,7 @@ from helpers.draw_map import draw_map
 from board import map_to_board_first, get_board, astar_shortest_path
 from tiles import get_next_best_move, get_goal, all_pos, get_all_best_moves, P_move, get_three_best_moves, is_around, get_n_best_moves
 from pprint import pprint
-
+from powerups import *
 
 _api_key = "3e555fd2-2d69-482f-b14c-e2fb503d66a5"
 
@@ -187,9 +187,19 @@ def solution5(game_id):
         goal_point = get_goal(tiles)
 
         path = astar_shortest_path(state, current_position, goal_point)
-        draw_map(state, path)
+        # draw_map(state, path)
 
         while not is_around(goal_point, current_position, 1):
+            powerups = current_player["powerupInventory"]
+            active_powerups = current_player["activePowerups"]
+            tile = state["tileInfo"][current_position[1]][current_position[0]]
+            for powerup in powerups:
+                if get_powerup_terrain(powerup) == tile["type"] and powerup not in active_powerups:
+                    response = _api.use_powerup(game_id, powerup)
+                    state = response["gameState"]
+                    break
+            # TODO: USE POWERUP IF FULL
+
             moves = get_n_best_moves(3, path, state)
             for next_move in moves:
                 turn += 1
@@ -201,7 +211,6 @@ def solution5(game_id):
                 else:
                     response = _api.make_move(
                         game_id, next_move.direction, next_move.move)
-
             state = response["gameState"]
             current_player = state["yourPlayer"]
             current_position = (current_player["xPos"], current_player["yPos"])
@@ -222,7 +231,7 @@ def main():
         print("Joined and readied! Solving...")
         # webbrowser.open(
         #    'http://www.theconsidition.se/ironmandebugvisualizer?gameId={}'.format(game_id), new = 2)
-        solution3(game_id)
+        solution5(game_id)
     # game_state = _api.get_game(game_id)
     # drawMap(game_state)
 

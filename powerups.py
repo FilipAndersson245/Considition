@@ -12,7 +12,26 @@ duration_powerups = {
     "Cyclops", 10,
     "BicycleHandlebar", 10,
 }
+powerup_terrain = {
+    "Flippers": "water",
+    "Shoes": "trail",
+    "Cycletire": "road"
+}
 
+powerup_bag = []
+powerups_active = []
+
+def get_powerup(tile):
+    if "powerup" in tile:
+        return tile["powerup"]["name"]
+    else:
+        return None
+
+def get_powerup_terrain(powerup):
+        return powerup_terrain[powerup] if powerup in powerup_terrain else None
 
 def update_powerups_value():
     pass
+
+def calculate_powerups(previous_powerups, new_powerups):
+    return (previous_powerups + new_powerups)[:3]
