@@ -225,8 +225,21 @@ def solution5(game_id):
             state = response["gameState"]
             current_player = state["yourPlayer"]
             current_position = (current_player["xPos"], current_player["yPos"])
-        draw_map(state, path)
-        print("Turns: "+str(turn))
+            path = astar_shortest_path(state, current_position, goal_point)
+        # draw_map(state, path)
+
+        # Hack to go to finnish line!
+        print("This should happen max 1 time" + str(path))
+        if len(path) == 2:
+            direction = get_dir(current_position, path[1])
+            response = _api.step(game_id, direction)
+            state = response["gameState"]
+            print("THE GAME STATE IS:" + str(state["gameStatus"]))
+            current_player = state["yourPlayer"]
+            current_position = (current_player["xPos"], current_player["yPos"])
+            path = astar_shortest_path(state, current_position, goal_point)
+        print("Turns: " + str(state["turn"]))
+        return state["turn"]
     else:
         print(initial_state["message"])
 
