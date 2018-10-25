@@ -13,7 +13,7 @@ from directions import (directions, get_dir, tree_in_any_direction,
                         tree_in_current_direction)
 from helpers.draw_map import draw_map
 from board import map_to_board_first, get_board, astar_shortest_path
-from tiles import get_next_best_move, get_goal, all_pos, get_all_best_moves, P_move, get_three_best_moves, is_around, get_n_best_moves
+from tiles import get_next_best_move, get_goal, all_pos, get_all_best_moves, P_move, is_around, get_n_best_moves
 from pprint import pprint
 from powerups import *
 
@@ -186,6 +186,7 @@ def solution5(game_id):
         path_index = 0
         map_to_board_first(tiles)
         goal_point = get_goal(tiles)
+        stamina = current_player["stamina"]
 
         path = astar_shortest_path(state, current_position, goal_point)
         # draw_map(state, path)
@@ -195,6 +196,8 @@ def solution5(game_id):
             active_powerups = map_active_powerups(
                 current_player["activePowerups"])
             tile = state["tileInfo"][current_position[1]][current_position[0]]
+            current_player = state["yourPlayer"]
+            stamina = current_player["stamina"]
 
             if len(powerups) == 3:
                 response = None
@@ -203,12 +206,24 @@ def solution5(game_id):
                 else:
                     response = _api.use_powerup(game_id, powerups[2])
                 state = response["gameState"]
+                current_player = state["yourPlayer"]
+                stamina = current_player["stamina"]
                 powerups = current_player["powerupInventory"]
             else:
+                for powerup in powerups:
+                    if powerup in cool_powerups and stamina < 60:
+                        response = _api.use_powerup(game_id, powerup)
+                        state = response["gameState"]
+                        current_player = state["yourPlayer"]
+                        stamina = current_player["stamina"]
+                        powerups = current_player["powerupInventory"]
+                        break
                 for powerup in powerups:
                     if get_powerup_terrain(powerup) == tile["type"] and powerup not in active_powerups:
                         response = _api.use_powerup(game_id, powerup)
                         state = response["gameState"]
+                        current_player = state["yourPlayer"]
+                        stamina = current_player["stamina"]
                         powerups = current_player["powerupInventory"]
                         break
 
@@ -225,6 +240,7 @@ def solution5(game_id):
                         game_id, next_move.direction, next_move.move)
             state = response["gameState"]
             current_player = state["yourPlayer"]
+            stamina = current_player["stamina"]
             current_position = (current_player["xPos"], current_player["yPos"])
             path = astar_shortest_path(state, current_position, goal_point)
         # draw_map(state, path)
@@ -264,7 +280,7 @@ def main():
 if __name__ == "__main__":
     turns_result = []
     avg = 0
-    for i in range(4):
+    for i in range(3):
         turns_result.append(main())
         # webbrowser.open(
         #     'http://www.theconsidition.se/ironmandebugvisualizer?gameId={}'.format(turns_result[i][0]), new=2)

@@ -27,6 +27,11 @@ drop_list = [
     "Spikeshoes",
     "Cyclops"
 ]
+cool_powerups = [
+    "Energyboost",
+    "Potion",
+    "StaminaSale"
+]
 
 powerup_bag = []
 powerups_active = []
@@ -39,7 +44,7 @@ def get_powerup(tile):
         return None
 
 def get_powerup_terrain(powerup):
-        return powerup_terrain[powerup] if powerup in powerup_terrain else None
+    return powerup_terrain[powerup] if powerup in powerup_terrain else None
 
 def update_powerups_value():
     pass
