@@ -261,15 +261,49 @@ def main():
     # drawMap(game_state)
 
 
+def multiPlayer():
+    _api = API(_api_key, 2, "standardmap", 10, 10, 10)
+    _api.end_previous_games_if_any()
+    game_id = _api.init_game()
+    _api.join_game(game_id)
+    readied_game = _api.try_ready_for_game(game_id)
+    if readied_game is not None:
+        print("Joined and readied! Solving...")
+
+        solution5(game_id)
+
+def multiPlayer2():
+    _api.end_previous_games_if_any()
+    game_id = input()
+    _api.join_game(game_id)
+    readied_game = _api.try_ready_for_game(game_id)
+    if readied_game is not None:
+        print("Joined and readied! Solving...")
+
+        solution5(game_id)
+
+def singlePlayer():
+    _api = API(_api_key, 1, "standardmap", 10, 10, 10)
+    _api.end_previous_games_if_any()
+    game_id = _api.init_game()
+    _api.join_game(game_id)
+    readied_game = _api.try_ready_for_game(game_id)
+    if readied_game is not None:
+        print("Joined and readied! Solving...")
+
+        solution5(game_id)
+
+
 if __name__ == "__main__":
-    turns_result = []
-    avg = 0
-    for i in range(4):
-        turns_result.append(main())
-        # webbrowser.open(
-        #     'http://www.theconsidition.se/ironmandebugvisualizer?gameId={}'.format(turns_result[i][0]), new=2)
-    for i in range(4):
-        print("Turns for round {}: {}".format(
-            turns_result[i][0], str(turns_result[i][1])))
-        avg += turns_result[i][1]
-    print("avg: " + str(avg/4))
+    singlePlayer()
+    # turns_result = []
+    # avg = 0
+    # for i in range(4):
+    #     turns_result.append(main())
+    #     # webbrowser.open(
+    #     #     'http://www.theconsidition.se/ironmandebugvisualizer?gameId={}'.format(turns_result[i][0]), new=2)
+    # for i in range(4):
+    #     print("Turns for round {}: {}".format(
+    #         turns_result[i][0], str(turns_result[i][1])))
+    #     avg += turns_result[i][1]
+    # print("avg: " + str(avg/4))
