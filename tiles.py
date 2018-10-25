@@ -149,15 +149,16 @@ def estimated_output_position(state: Dict[str, Any], position, stamina, directio
 
             # sliding
             if boost_tile != None:
-                if (boost_tile["direction"] != direction) and (boost_tile["direction"] != opposite_directions[direction]):
-                    deviation_points[boost_tile["direction"]] = max(deviation_points[boost_tile["direction"]] + boost_tile["speed"] - deviation_points[opposite_directions[boost_tile["direction"]]], 0)
-                    deviation_points[opposite_directions[boost_tile["direction"]]] = max(deviation_points[opposite_directions[boost_tile["direction"]]] - boost_tile["speed"], 0)
-                    for sliding_dir in directions:
-                        if deviation_points[sliding_dir] >= deviation[next_tile["type"]]:
-                            # make sliding
-                            player_position = player_position = get_position_in_direction(
-                                sliding_dir, player_position)
-                            deviation_points[sliding_dir] -= deviation[next_tile["type"]]
+                if not is_impassable(next_tile["type"]):
+                    if (boost_tile["direction"] != direction) and (boost_tile["direction"] != opposite_directions[direction]):
+                        deviation_points[boost_tile["direction"]] = max(deviation_points[boost_tile["direction"]] + boost_tile["speed"] - deviation_points[opposite_directions[boost_tile["direction"]]], 0)
+                        deviation_points[opposite_directions[boost_tile["direction"]]] = max(deviation_points[opposite_directions[boost_tile["direction"]]] - boost_tile["speed"], 0)
+                        for sliding_dir in directions:
+                            if deviation_points[sliding_dir] >= deviation[next_tile["type"]]:
+                                # make sliding
+                                player_position = player_position = get_position_in_direction(
+                                    sliding_dir, player_position)
+                                deviation_points[sliding_dir] -= deviation[next_tile["type"]]
 
         else:
             break

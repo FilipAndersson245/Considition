@@ -263,7 +263,6 @@ def main():
 
 def multiPlayer():
     _api = API(_api_key, 2, "standardmap", 10, 10, 10)
-    _api.end_previous_games_if_any()
     game_id = _api.init_game()
     _api.join_game(game_id)
     readied_game = _api.try_ready_for_game(game_id)
@@ -271,20 +270,20 @@ def multiPlayer():
         print("Joined and readied! Solving...")
 
         solution5(game_id)
-
-def multiPlayer2():
     _api.end_previous_games_if_any()
-    game_id = input()
+
+def joinGame():
+    game_id = input("Game-id: ")
     _api.join_game(game_id)
     readied_game = _api.try_ready_for_game(game_id)
     if readied_game is not None:
         print("Joined and readied! Solving...")
 
         solution5(game_id)
+    _api.end_previous_games_if_any()
 
 def singlePlayer():
-    _api = API(_api_key, 1, "standardmap", 10, 10, 10)
-    _api.end_previous_games_if_any()
+    _api = API(_api_key, 1, "jonkopingmap", 10, 10, 10)
     game_id = _api.init_game()
     _api.join_game(game_id)
     readied_game = _api.try_ready_for_game(game_id)
@@ -292,6 +291,18 @@ def singlePlayer():
         print("Joined and readied! Solving...")
 
         solution5(game_id)
+    _api.end_previous_games_if_any()
+
+def singlePlayer():
+    _api = API(_api_key, 1, "jonkopingmap", 10, 10, 10)
+    game_id = _api.init_game()
+    _api.join_game(game_id)
+    readied_game = _api.try_ready_for_game(game_id)
+    if readied_game is not None:
+        print("Joined and readied! Solving...")
+
+        solution5(game_id)
+    _api.end_previous_games_if_any()
 
 
 if __name__ == "__main__":
